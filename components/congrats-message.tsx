@@ -28,7 +28,7 @@ export default function CongratulationMessage({ hypotheticalMax, growthPotential
               Your hypothetical max revenue is <span className="font-semibold">${hypotheticalMax.toLocaleString()}</span> per month
             </p>
             <p className="text-sm text-green-600">
-              That's {growthMultiplier.toFixed(2)}x your current revenue!
+              That&apos;s {growthMultiplier.toFixed(2)}x your current revenue!
             </p>
           </div>
         </div>
