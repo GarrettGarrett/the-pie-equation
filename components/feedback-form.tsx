@@ -47,7 +47,7 @@ export function FeedbackForm() {
         <DialogHeader>
           <DialogTitle>Submit Feedback</DialogTitle>
           <DialogDescription>
-            We&apos;d love to hear what went well or how we can improve the this tool.
+            We&apos;d love to hear what went well or how we can improve this tool.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>

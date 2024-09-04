@@ -21,6 +21,6 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "components/pi-equation-calculator.tsx", "app/page.js"],
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts", "components/pi-equation-calculator.tsx", "app/page.js", "components/magicui/confetti.js"],
   "exclude": ["node_modules"]
 }
