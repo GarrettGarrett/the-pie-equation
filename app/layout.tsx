@@ -7,8 +7,16 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "The Pie Equation",
   description: "The Pie Equation",
-  icons: {
-    icon: "📚",
+  openGraph: {
+    images: [
+      {
+        url: "/og-image.png",
+        secureUrl: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "Preview image for The Pie Equation",
+      },
+    ],
   },
 };
 
