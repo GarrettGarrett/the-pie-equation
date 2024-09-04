@@ -7,6 +7,7 @@ const inter = Inter({ subsets: ["latin"] });
 export const metadata: Metadata = {
   title: "The Pie Equation",
   description: "The Pie Equation",
+  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   openGraph: {
     images: [
       {
@@ -26,9 +27,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head />
+    <html lang="en">
       <body>{children}</body>
     </html>
-  );
+  )
 }
