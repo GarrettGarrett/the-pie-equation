@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useCallback, useMemo } from "react"
+import { useState, useCallback, useMemo, useRef, useEffect } from "react"
 import { Calculator, HelpCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import CongratulationMessage from "./congrats-message"
 import { ShrinkingRevenueCard } from "./shrinking-revenue-card"
 import NeutralMaxRevenueCard from "./neutral-card"
+import { cn } from "@/lib/utils"
 
 interface PiEquationCalculatorProps {
   onCalculate: (current: number, max: number, triggerConfetti: () => void) => void;
@@ -117,6 +118,11 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     calculatePiEquation()
+    
+    // Scroll to the results after a short delay to ensure the results have rendered
+    setTimeout(() => {
+      resultRef.current?.scrollIntoView({ behavior: 'smooth' })
+    }, 100)
   }
 
   const handleChurnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -144,6 +150,15 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
     }
   }
 
+  const resultRef = useRef<HTMLDivElement>(null)
+
+  const InputWithLargerFont = ({ className, ...props }: React.ComponentProps<typeof Input>) => (
+    <Input
+      className={cn("text-base md:text-lg", className)}
+      {...props}
+    />
+  )
+
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="w-full">
@@ -169,7 +184,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <Input
+                <InputWithLargerFont
                   id="salesVolume"
                   placeholder="Enter sales volume"
                   value={salesVolume}
@@ -191,7 +206,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <Input
+                <InputWithLargerFont
                   id="price"
                   placeholder="Enter price"
                   value={price}
@@ -213,7 +228,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <Input
+                <InputWithLargerFont
                   id="churn"
                   placeholder="Enter churn rate "
                   value={churn}
@@ -235,7 +250,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <Input
+                <InputWithLargerFont
                   id="currentRevenue"
                   placeholder="Enter current revenue"
                   value={currentRevenue}
@@ -252,28 +267,30 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
           </CardContent>
         </Card>
       </form>
-      {hypotheticalMax !== null && (
-        <>
-          {hypotheticalMax > parseFloat(currentRevenue) && (
-            <CongratulationMessage
-              hypotheticalMax={hypotheticalMax}
-              growthPotential={growthPotential || 1}
-            />
-          )}
-          {hypotheticalMax === parseFloat(currentRevenue) && (
-            <NeutralMaxRevenueCard maxRevenue={hypotheticalMax} />
-          )}
-          {hypotheticalMax < parseFloat(currentRevenue) && (
-            <ShrinkingRevenueCard
-              maxRevenue={hypotheticalMax}
-              shrinkFactor={shrinkFactor || 1}
-              shrinkPercentage={shrinkPercentage || 0}
-              breakEvenChurn={breakEvenChurn || 0}
-              breakEvenSalesVolume={breakEvenSalesVolume || 0}
-            />
-          )}
-        </>
-      )}
+      <div ref={resultRef}>
+        {hypotheticalMax !== null && (
+          <>
+            {hypotheticalMax > parseFloat(currentRevenue) && (
+              <CongratulationMessage
+                hypotheticalMax={hypotheticalMax}
+                growthPotential={growthPotential || 1}
+              />
+            )}
+            {hypotheticalMax === parseFloat(currentRevenue) && (
+              <NeutralMaxRevenueCard maxRevenue={hypotheticalMax} />
+            )}
+            {hypotheticalMax < parseFloat(currentRevenue) && (
+              <ShrinkingRevenueCard
+                maxRevenue={hypotheticalMax}
+                shrinkFactor={shrinkFactor || 1}
+                shrinkPercentage={shrinkPercentage || 0}
+                breakEvenChurn={breakEvenChurn || 0}
+                breakEvenSalesVolume={breakEvenSalesVolume || 0}
+              />
+            )}
+          </>
+        )}
+      </div>
     </div>
   )
 }
