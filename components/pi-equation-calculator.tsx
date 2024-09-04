@@ -1,32 +1,52 @@
-"use client"
+"use client";
 
-import { useState, useCallback, useMemo, useRef, useEffect } from "react"
-import { Calculator, HelpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
-import CongratulationMessage from "./congrats-message"
-import { ShrinkingRevenueCard } from "./shrinking-revenue-card"
-import NeutralMaxRevenueCard from "./neutral-card"
-import { cn } from "@/lib/utils"
+import React, {
+  useState,
+  useCallback,
+  useMemo,
+  useRef,
+  useEffect,
+} from "react";
+import { Calculator, HelpCircle } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import CongratulationMessage from "./congrats-message";
+import { ShrinkingRevenueCard } from "./shrinking-revenue-card";
+import NeutralMaxRevenueCard from "./neutral-card";
+import { cn } from "@/lib/utils";
 
 interface PiEquationCalculatorProps {
-  onCalculate: (current: number, max: number, triggerConfetti: () => void) => void;
+  onCalculate: (
+    current: number,
+    max: number,
+    triggerConfetti: () => void
+  ) => void;
 }
 
-export default function PiEquationCalculator({ onCalculate }: PiEquationCalculatorProps) {
-  const [salesVolume, setSalesVolume] = useState("")
-  const [price, setPrice] = useState("")
-  const [churn, setChurn] = useState("")
-  const [currentRevenue, setCurrentRevenue] = useState("")
-  const [hypotheticalMax, setHypotheticalMax] = useState<number | null>(null)
-  const [growthPotential, setGrowthPotential] = useState<number | null>(null)
-  const [breakEvenChurn, setBreakEvenChurn] = useState<number | null>(null)
-  const [breakEvenSalesVolume, setBreakEvenSalesVolume] = useState<number | null>(null)
-  const [requiredChurn, setRequiredChurn] = useState<number | null>(null)
-  const [requiredSalesVolume, setRequiredSalesVolume] = useState<number | null>(null)
+export default function PiEquationCalculator({
+  onCalculate,
+}: PiEquationCalculatorProps) {
+  const [salesVolume, setSalesVolume] = useState("");
+  const [price, setPrice] = useState("");
+  const [churn, setChurn] = useState("");
+  const [currentRevenue, setCurrentRevenue] = useState("");
+  const [hypotheticalMax, setHypotheticalMax] = useState<number | null>(null);
+  const [growthPotential, setGrowthPotential] = useState<number | null>(null);
+  const [breakEvenChurn, setBreakEvenChurn] = useState<number | null>(null);
+  const [breakEvenSalesVolume, setBreakEvenSalesVolume] = useState<
+    number | null
+  >(null);
+  const [requiredChurn, setRequiredChurn] = useState<number | null>(null);
+  const [requiredSalesVolume, setRequiredSalesVolume] = useState<number | null>(
+    null
+  );
   const [shrinkFactor, setShrinkFactor] = useState<number | null>(null);
   const [shrinkPercentage, setShrinkPercentage] = useState<number | null>(null);
   const [timeToMax, setTimeToMax] = useState<number | null>(null);
@@ -39,21 +59,32 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
     } else {
       return parsed; // Already in decimal form
     }
-  }
+  };
 
-  const handleCalculate = useCallback((current: number, max: number) => {
-    onCalculate(current, max, () => {
-      console.log("Triggering confetti!");
-    });
-  }, [onCalculate])
+  const handleCalculate = useCallback(
+    (current: number, max: number) => {
+      onCalculate(current, max, () => {
+        console.log("Triggering confetti!");
+      });
+    },
+    [onCalculate]
+  );
 
-  const calculateBreakEvenChurn = (sv: number, p: number, cr: number): number => {
-    return p * sv / cr
-  }
+  const calculateBreakEvenChurn = (
+    sv: number,
+    p: number,
+    cr: number
+  ): number => {
+    return (p * sv) / cr;
+  };
 
-  const calculateBreakEvenSalesVolume = (c: number, p: number, cr: number): number => {
+  const calculateBreakEvenSalesVolume = (
+    c: number,
+    p: number,
+    cr: number
+  ): number => {
     return (c * cr) / p;
-  }
+  };
 
   const calculatePiEquation = () => {
     const sv = parseFloat(salesVolume);
@@ -77,7 +108,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
 
     const lifetimeValue = p / c;
     const calculatedMaxRevenue = sv * lifetimeValue;
-    const calculatedResult = sv * p / (c * cr);
+    const calculatedResult = (sv * p) / (c * cr);
 
     const growthFactor = calculatedMaxRevenue / cr;
     setGrowthPotential(growthFactor);
@@ -92,7 +123,7 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
       const shrinkFactorValue = calculatedMaxRevenue / cr;
       setShrinkFactor(shrinkFactorValue);
       setShrinkPercentage((1 - shrinkFactorValue) * 100);
-      
+
       const breakEvenSalesVolumeValue = calculateBreakEvenSalesVolume(c, p, cr);
       setBreakEvenSalesVolume(Math.ceil(breakEvenSalesVolumeValue));
 
@@ -113,59 +144,69 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
     // Calculate time to reach max revenue
     const timeToMaxMonths = calculateTimeToMax(cr, calculatedMaxRevenue, sv, c);
     setTimeToMax(timeToMaxMonths);
-  }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    calculatePiEquation()
-    
+    e.preventDefault();
+    calculatePiEquation();
+
     // Scroll to the results after a short delay to ensure the results have rendered
     setTimeout(() => {
-      resultRef.current?.scrollIntoView({ behavior: 'smooth' })
-    }, 100)
-  }
+      resultRef.current?.scrollIntoView({ behavior: "smooth" });
+    }, 100);
+  };
 
   const handleChurnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setChurn(e.target.value);
-  }
+  };
 
-  const calculateRequiredChurn = useMemo(() => (sv: number, p: number, cr: number): number => {
-    const targetMax = cr + 1000;
-    return p * sv / targetMax;
-  }, [])
+  const calculateRequiredChurn = useMemo(
+    () =>
+      (sv: number, p: number, cr: number): number => {
+        const targetMax = cr + 1000;
+        return (p * sv) / targetMax;
+      },
+    []
+  );
 
-  const calculateRequiredSalesVolume = useMemo(() => (c: number, p: number, cr: number): number => {
-    const targetMax = cr + 1000;
-    return (c * targetMax) / p;
-  }, [])
+  const calculateRequiredSalesVolume = useMemo(
+    () =>
+      (c: number, p: number, cr: number): number => {
+        const targetMax = cr + 1000;
+        return (c * targetMax) / p;
+      },
+    []
+  );
 
-  const calculateTimeToMax = (current: number, max: number, sv: number, c: number): number => {
+  const calculateTimeToMax = (
+    current: number,
+    max: number,
+    sv: number,
+    c: number
+  ): number => {
     if (max > current) {
       // Growing scenario
-      const monthlyGrowth = sv - (current * c);
+      const monthlyGrowth = sv - current * c;
       return Math.ceil((max - current) / monthlyGrowth);
     } else {
       // Shrinking scenario
       return Math.ceil(Math.log(max / current) / Math.log(1 - c));
     }
-  }
+  };
 
-  const resultRef = useRef<HTMLDivElement>(null)
-
-  const InputWithLargerFont = ({ className, ...props }: React.ComponentProps<typeof Input>) => (
-    <Input
-      className={cn("text-base md:text-lg", className)}
-      {...props}
-    />
-  )
+  const resultRef = useRef<HTMLDivElement>(null);
 
   return (
     <div className="w-full">
       <form onSubmit={handleSubmit} className="w-full">
         <Card className="w-full">
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center text-primary">Pie Equation Calculator</CardTitle>
-            <p className="text-sm text-center text-muted-foreground">For Membership Businesses</p>
+            <CardTitle className="text-2xl font-bold text-center text-primary">
+              Pie Equation Calculator
+            </CardTitle>
+            <p className="text-sm text-center text-muted-foreground">
+              For Membership Businesses
+            </p>
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -184,7 +225,8 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <InputWithLargerFont
+                <Input
+                  className="text-base md:text-lg"
                   id="salesVolume"
                   placeholder="Enter sales volume"
                   value={salesVolume}
@@ -202,11 +244,13 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent>
-                      The monthly subscription price or average revenue per user.
+                      The monthly subscription price or average revenue per
+                      user.
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <InputWithLargerFont
+                <Input
+                  className="text-base md:text-lg"
                   id="price"
                   placeholder="Enter price"
                   value={price}
@@ -224,11 +268,13 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent>
-                      If you had 100 customers last month and 13 left, then churn is 13%
+                      If you had 100 customers last month and 13 left, then
+                      churn is 13%
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <InputWithLargerFont
+                <Input
+                  className="text-base md:text-lg"
                   id="churn"
                   placeholder="Enter churn rate "
                   value={churn}
@@ -250,7 +296,8 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
                     </PopoverContent>
                   </Popover>
                 </Label>
-                <InputWithLargerFont
+                <Input
+                  className="text-base md:text-lg"
                   id="currentRevenue"
                   placeholder="Enter current revenue"
                   value={currentRevenue}
@@ -292,5 +339,5 @@ export default function PiEquationCalculator({ onCalculate }: PiEquationCalculat
         )}
       </div>
     </div>
-  )
+  );
 }
