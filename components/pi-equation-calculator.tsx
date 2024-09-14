@@ -1,343 +1,337 @@
-"use client";
+'use client'
 
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useRef,
-  useEffect,
-} from "react";
-import { Calculator, HelpCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import CongratulationMessage from "./congrats-message";
-import { ShrinkingRevenueCard } from "./shrinking-revenue-card";
-import NeutralMaxRevenueCard from "./neutral-card";
-import { cn } from "@/lib/utils";
+import { Info } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Button } from "@/components/ui/button"
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
+import { useToast } from "@/hooks/use-toast"
+import { TrendingUp, TrendingDown } from "lucide-react"
+import { Line, LineChart, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts'
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover"
 
-interface PiEquationCalculatorProps {
-  onCalculate: (
-    current: number,
-    max: number,
-    triggerConfetti: () => void
-  ) => void;
-}
-
-export default function PiEquationCalculator({
-  onCalculate,
-}: PiEquationCalculatorProps) {
-  const [salesVolume, setSalesVolume] = useState("");
-  const [price, setPrice] = useState("");
-  const [churn, setChurn] = useState("");
-  const [currentRevenue, setCurrentRevenue] = useState("");
+const PIEquationCalculator: React.FC = () => {
+  const [salesVolume, setSalesVolume] = useState<number | ''>('');
+  const [price, setPrice] = useState<number | ''>('');
+  const [churn, setChurn] = useState<number | ''>('');
+  const [currentRevenue, setCurrentRevenue] = useState<number | ''>('');
   const [hypotheticalMax, setHypotheticalMax] = useState<number | null>(null);
-  const [growthPotential, setGrowthPotential] = useState<number | null>(null);
-  const [breakEvenChurn, setBreakEvenChurn] = useState<number | null>(null);
-  const [breakEvenSalesVolume, setBreakEvenSalesVolume] = useState<
-    number | null
-  >(null);
-  const [requiredChurn, setRequiredChurn] = useState<number | null>(null);
-  const [requiredSalesVolume, setRequiredSalesVolume] = useState<number | null>(
-    null
-  );
-  const [shrinkFactor, setShrinkFactor] = useState<number | null>(null);
-  const [shrinkPercentage, setShrinkPercentage] = useState<number | null>(null);
-  const [timeToMax, setTimeToMax] = useState<number | null>(null);
+  const [lifetimeValue, setLifetimeValue] = useState<number | null>(null);
+  const { toast } = useToast();
 
-  const normalizeChurnRate = (value: string): number => {
-    const parsed = parseFloat(value);
-    if (isNaN(parsed)) return NaN;
-    if (parsed >= 1) {
-      return parsed / 100; // Treat as percentage
-    } else {
-      return parsed; // Already in decimal form
+  useEffect(() => {
+    if (process.env.NODE_ENV === 'development') {
+      setSalesVolume(Math.floor(Math.random() * 1000) + 100);
+      setPrice(Math.floor(Math.random() * 100) + 10);
+      setChurn(Math.floor(Math.random() * 10) + 1);
+      setCurrentRevenue(Math.floor(Math.random() * 100000) + 10000);
+    }
+  }, []);
+
+  const handleInputChange = (setter: React.Dispatch<React.SetStateAction<number | ''>>) => (
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const value = e.target.value;
+    if (value === '' || (!isNaN(parseFloat(value)) && isFinite(Number(value)))) {
+      setter(value === '' ? '' : parseFloat(value));
     }
   };
 
-  const handleCalculate = useCallback(
-    (current: number, max: number) => {
-      onCalculate(current, max, () => {
-        console.log("Triggering confetti!");
+  const calculateResults = () => {
+    if (typeof salesVolume === 'number' && typeof price === 'number' && typeof churn === 'number') {
+      if (churn === 0) {
+        toast({
+          title: "Error",
+          description: "Churn rate cannot be zero.",
+          variant: "destructive",
+        });
+        return;
+      }
+      const max = (salesVolume * price) / (churn / 100);
+      setHypotheticalMax(max);
+      
+      // Calculate Lifetime Value
+      const ltv = price / (churn / 100);
+      setLifetimeValue(ltv);
+    } else {
+      toast({
+        title: "Error",
+        description: "Please fill in all fields with valid numbers.",
+        variant: "destructive",
       });
+    }
+  };
+
+  const getComparisonMessage = () => {
+    if (hypotheticalMax === null || typeof currentRevenue !== 'number') return '';
+    if (hypotheticalMax < currentRevenue) {
+      return "Your business is on track to shrink down to the hypothetical max.";
+    } else if (hypotheticalMax === currentRevenue) {
+      return "Your business is breaking even.";
+    } else {
+      const growthFactor = hypotheticalMax / currentRevenue;
+      return `Your business has the potential to grow by ${growthFactor.toFixed(2)} times.`;
+    }
+  };
+
+  const generateChartData = () => {
+    if (hypotheticalMax === null || typeof currentRevenue !== 'number') return [];
+    const steps = 100;
+    const data = [];
+    for (let i = 0; i <= steps; i++) {
+      const t = i / steps;
+      // Custom S-curve function
+      const revenue = currentRevenue + (hypotheticalMax - currentRevenue) * (1 / (1 + Math.exp(-12 * (t - 0.5))));
+      data.push({
+        step: i,
+        revenue: Math.round(revenue),
+      });
+    }
+    return data;
+  };
+
+  const chartData = generateChartData();
+
+  const CustomDot = (props: any) => {
+    const { cx, cy, payload } = props;
+    if (payload.step === 0 || payload.step === 100) {
+      const color = payload.step === 0 ? "#4EB9F3" : "#009E5D"; // New blue for start, Green for end
+      return (
+        <circle cx={cx} cy={cy} r={6} fill={color} />
+      );
+    }
+    return null;
+  };
+
+  const radialChartData = [
+    {
+      name: 'Current Revenue',
+      value: currentRevenue as number,
+      fill: '#4EB9F3'
     },
-    [onCalculate]
-  );
-
-  const calculateBreakEvenChurn = (
-    sv: number,
-    p: number,
-    cr: number
-  ): number => {
-    return (p * sv) / cr;
-  };
-
-  const calculateBreakEvenSalesVolume = (
-    c: number,
-    p: number,
-    cr: number
-  ): number => {
-    return (c * cr) / p;
-  };
-
-  const calculatePiEquation = () => {
-    const sv = parseFloat(salesVolume);
-    const p = parseFloat(price);
-    let c = normalizeChurnRate(churn);
-    const cr = parseFloat(currentRevenue);
-
-    if (isNaN(sv) || isNaN(p) || isNaN(c) || isNaN(cr)) {
-      onCalculate(0, 0, () => {}); // Pass an empty function when not triggering confetti
-      setHypotheticalMax(null);
-      setGrowthPotential(null);
-      setBreakEvenChurn(null);
-      setBreakEvenSalesVolume(null);
-      return;
+    {
+      name: 'Hypothetical Max',
+      value: hypotheticalMax as number,
+      fill: '#009E5D'
     }
+  ];
 
-    // Treat zero churn as 0.0001 (0.01%)
-    if (c === 0) {
-      c = 0.0001;
-    }
-
-    const lifetimeValue = p / c;
-    const calculatedMaxRevenue = sv * lifetimeValue;
-    const calculatedResult = (sv * p) / (c * cr);
-
-    const growthFactor = calculatedMaxRevenue / cr;
-    setGrowthPotential(growthFactor);
-    handleCalculate(cr, calculatedMaxRevenue);
-    setHypotheticalMax(calculatedMaxRevenue);
-
-    // Calculate break-even values
-    const breakEvenChurnValue = calculateBreakEvenChurn(sv, p, cr);
-    setBreakEvenChurn(breakEvenChurnValue);
-
-    if (calculatedMaxRevenue < cr) {
-      const shrinkFactorValue = calculatedMaxRevenue / cr;
-      setShrinkFactor(shrinkFactorValue);
-      setShrinkPercentage((1 - shrinkFactorValue) * 100);
-
-      const breakEvenSalesVolumeValue = calculateBreakEvenSalesVolume(c, p, cr);
-      setBreakEvenSalesVolume(Math.ceil(breakEvenSalesVolumeValue));
-
-      // Calculate required churn and sales volume for $1000 above current revenue
-      const requiredChurnValue = calculateRequiredChurn(sv, p, cr);
-      setRequiredChurn(requiredChurnValue);
-
-      const requiredSalesVolumeValue = calculateRequiredSalesVolume(c, p, cr);
-      setRequiredSalesVolume(Math.ceil(requiredSalesVolumeValue));
-    } else {
-      setBreakEvenSalesVolume(null);
-      setRequiredChurn(null);
-      setRequiredSalesVolume(null);
-      setShrinkFactor(null);
-      setShrinkPercentage(null);
-    }
-
-    // Calculate time to reach max revenue
-    const timeToMaxMonths = calculateTimeToMax(cr, calculatedMaxRevenue, sv, c);
-    setTimeToMax(timeToMaxMonths);
+  const chartConfig = {
+    currentRevenue: {
+      color: '#4EB9F3',
+      label: 'Current Revenue',
+    },
+    hypotheticalMax: {
+      color: '#009E5D',
+      label: 'Hypothetical Max',
+    },
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    calculatePiEquation();
-
-    // Scroll to the results after a short delay to ensure the results have rendered
-    setTimeout(() => {
-      resultRef.current?.scrollIntoView({ behavior: "smooth" });
-    }, 100);
+  const formatNumber = (num: number) => {
+    return num.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
-
-  const handleChurnChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setChurn(e.target.value);
-  };
-
-  const calculateRequiredChurn = useMemo(
-    () =>
-      (sv: number, p: number, cr: number): number => {
-        const targetMax = cr + 1000;
-        return (p * sv) / targetMax;
-      },
-    []
-  );
-
-  const calculateRequiredSalesVolume = useMemo(
-    () =>
-      (c: number, p: number, cr: number): number => {
-        const targetMax = cr + 1000;
-        return (c * targetMax) / p;
-      },
-    []
-  );
-
-  const calculateTimeToMax = (
-    current: number,
-    max: number,
-    sv: number,
-    c: number
-  ): number => {
-    if (max > current) {
-      // Growing scenario
-      const monthlyGrowth = sv - current * c;
-      return Math.ceil((max - current) / monthlyGrowth);
-    } else {
-      // Shrinking scenario
-      return Math.ceil(Math.log(max / current) / Math.log(1 - c));
-    }
-  };
-
-  const resultRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="w-full">
-      <form onSubmit={handleSubmit} className="w-full">
-        <Card className="w-full">
+    <div className="space-y-6 w-full max-w-2xl mx-auto mt-8 px-4 sm:px-6 md:px-8">
+      <Card>
+        <CardHeader>
+          <CardTitle>The PIE Equation Calculator</CardTitle>
+          <CardDescription>
+            Calculate Your Hypothetical Max Revenue 
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div className="grid w-full items-center gap-1.5">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="salesVolume">Sales Volume Monthly</Label>
+                <Popover>
+                  <PopoverTrigger>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    The number of new customers you acquire each month.
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                id="salesVolume"
+                value={salesVolume}
+                onChange={handleInputChange(setSalesVolume)}
+                placeholder="Enter sales volume"
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="price">Price Monthly</Label>
+                <Popover>
+                  <PopoverTrigger>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    The monthly price of your product or service.
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                id="price"
+                value={price}
+                onChange={handleInputChange(setPrice)}
+                placeholder="Enter price"
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="churn">Churn Monthly (%)</Label>
+                <Popover>
+                  <PopoverTrigger>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    The percentage of customers who cancel or don't renew their subscription each month.
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                id="churn"
+                value={churn}
+                onChange={handleInputChange(setChurn)}
+                placeholder="Enter churn rate"
+              />
+            </div>
+            <div className="grid w-full items-center gap-1.5">
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="currentRevenue">Current Revenue Monthly</Label>
+                <Popover>
+                  <PopoverTrigger>
+                    <Info className="h-4 w-4 text-muted-foreground" />
+                  </PopoverTrigger>
+                  <PopoverContent>
+                    Your current monthly revenue.
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Input
+                type="number"
+                id="currentRevenue"
+                value={currentRevenue}
+                onChange={handleInputChange(setCurrentRevenue)}
+                placeholder="Enter current revenue"
+              />
+            </div>
+            <Button onClick={calculateResults}>Calculate</Button>
+          </div>
+        </CardContent>
+      </Card>
+
+      {hypotheticalMax !== null && (
+        <Card>
           <CardHeader>
-            <CardTitle className="text-2xl font-bold text-center text-primary">
-              Pie Equation Calculator
-            </CardTitle>
-            <p className="text-sm text-center text-muted-foreground">
-              For Membership Businesses
-            </p>
+            <CardTitle>Results</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-2">
-                <Label htmlFor="salesVolume" className="flex items-center">
-                  Sales Volume Monthly
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" className="p-0 h-auto ml-2">
-                        <HelpCircle className="h-4 w-4" />
-                        <span className="sr-only">Sales Volume Info</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      The number of new customers acquired per month.
-                    </PopoverContent>
-                  </Popover>
-                </Label>
-                <Input
-                  className="text-base md:text-lg"
-                  id="salesVolume"
-                  placeholder="Enter sales volume"
-                  value={salesVolume}
-                  onChange={(e) => setSalesVolume(e.target.value)}
-                />
+          <CardContent>
+            <div className="space-y-4">
+              <p>Hypothetical Max Revenue: ${formatNumber(hypotheticalMax)}</p>
+              <div className="text-sm text-muted-foreground">
+                <p>Calculation:</p>
+                <p>Hypothetical Max = (Sales Volume * Price) / (Churn / 100)</p>
+                <p>= ({salesVolume.toLocaleString()} * ${formatNumber(price as number)}) / ({churn}% / 100)</p>
+                <p>= ${formatNumber(hypotheticalMax)}</p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="price" className="flex items-center">
-                  Price Monthly
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" className="p-0 h-auto ml-2">
-                        <HelpCircle className="h-4 w-4" />
-                        <span className="sr-only">Price Info</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      The monthly subscription price or average revenue per
-                      user.
-                    </PopoverContent>
-                  </Popover>
-                </Label>
-                <Input
-                  className="text-base md:text-lg"
-                  id="price"
-                  placeholder="Enter price"
-                  value={price}
-                  onChange={(e) => setPrice(e.target.value)}
-                />
+              <div className="h-80">
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartData}
+                    margin={{ top: 20, right: 30, left: 20, bottom: 20 }}
+                  >
+                    <XAxis
+                      dataKey="step"
+                      tickFormatter={() => ''}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      tickFormatter={(value) => `$${(value / 1000).toFixed(0)}k`}
+                      axisLine={{ stroke: 'var(--muted-foreground)' }}
+                      tickLine={false}
+                      width={80}
+                      tickCount={5}
+                      domain={['auto', 'auto']}
+                      padding={{ top: 20, bottom: 20 }}
+                    />
+                    <Tooltip
+                      formatter={(value) => [`$${Number(value).toLocaleString()}`, 'Revenue']}
+                      labelFormatter={() => ''}
+                      contentStyle={{
+                        backgroundColor: 'var(--background)',
+                        border: '1px solid var(--border)',
+                        borderRadius: '4px',
+                        color: 'var(--foreground)'
+                      }}
+                    />
+                    <Legend 
+                      payload={[
+                        { value: 'Current Revenue', type: 'circle', color: '#4EB9F3' },
+                        { value: 'Hypothetical Max', type: 'circle', color: '#009E5D' },
+                        { value: 'Revenue Growth', type: 'line', color: '#F8D481' }
+                      ]}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      stroke="#F8D481"
+                      strokeWidth={2}
+                      dot={<CustomDot />}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="churn" className="flex items-center">
-                  Churn Monthly (% or decimal)
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" className="p-0 h-auto ml-2">
-                        <HelpCircle className="h-4 w-4" />
-                        <span className="sr-only">Churn Info</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      If you had 100 customers last month and 13 left, then
-                      churn is 13%
-                    </PopoverContent>
-                  </Popover>
-                </Label>
-                <Input
-                  className="text-base md:text-lg"
-                  id="churn"
-                  placeholder="Enter churn rate "
-                  value={churn}
-                  onChange={handleChurnChange}
-                />
+              <div className="flex gap-2 font-medium leading-none">
+                {hypotheticalMax > (currentRevenue as number) ? (
+                  <>
+                    Potential growth: {((hypotheticalMax / (currentRevenue as number) - 1) * 100).toFixed(2)}%
+                    <TrendingUp className="h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    Potential shrinkage: {((1 - hypotheticalMax / (currentRevenue as number)) * 100).toFixed(2)}%
+                    <TrendingDown className="h-4 w-4" />
+                  </>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="currentRevenue" className="flex items-center">
-                  Current Revenue Monthly
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button variant="ghost" className="p-0 h-auto ml-2">
-                        <HelpCircle className="h-4 w-4" />
-                        <span className="sr-only">Current Revenue Info</span>
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent>
-                      Your current monthly recurring revenue.
-                    </PopoverContent>
-                  </Popover>
-                </Label>
-                <Input
-                  className="text-base md:text-lg"
-                  id="currentRevenue"
-                  placeholder="Enter current revenue"
-                  value={currentRevenue}
-                  onChange={(e) => setCurrentRevenue(e.target.value)}
-                />
+              <div className="text-sm text-muted-foreground">
+                {getComparisonMessage()}
               </div>
             </div>
-            <Button
-              type="submit"
-              className="w-full text-lg py-6 bg-primary hover:bg-primary/90"
-            >
-              <Calculator className="mr-2 h-5 w-5" /> Crunch the Numbers
-            </Button>
           </CardContent>
         </Card>
-      </form>
-      <div ref={resultRef}>
-        {hypotheticalMax !== null && (
-          <>
-            {hypotheticalMax > parseFloat(currentRevenue) && (
-              <CongratulationMessage
-                hypotheticalMax={hypotheticalMax}
-                growthPotential={growthPotential || 1}
-              />
-            )}
-            {hypotheticalMax === parseFloat(currentRevenue) && (
-              <NeutralMaxRevenueCard maxRevenue={hypotheticalMax} />
-            )}
-            {hypotheticalMax < parseFloat(currentRevenue) && (
-              <ShrinkingRevenueCard
-                maxRevenue={hypotheticalMax}
-                shrinkFactor={shrinkFactor || 1}
-                shrinkPercentage={shrinkPercentage || 0}
-                breakEvenChurn={breakEvenChurn || 0}
-                breakEvenSalesVolume={breakEvenSalesVolume || 0}
-              />
-            )}
-          </>
-        )}
-      </div>
+      )}
+
+      {lifetimeValue !== null && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Lifetime Value</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p>Customer Lifetime Value: ${formatNumber(lifetimeValue)}</p>
+            <div className="text-sm text-muted-foreground mt-2">
+              <p>This is the average revenue you can expect from a customer over their entire relationship with your business.</p>
+              <p className="mt-2">Calculation:</p>
+              <p>Lifetime Value = Price / (Churn / 100)</p>
+              <p>= ${formatNumber(price as number)} / ({churn}% / 100)</p>
+              <p>= ${formatNumber(lifetimeValue)}</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+
     </div>
   );
-}
+};
+
+export default PIEquationCalculator;

@@ -1,13 +1,30 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
+import { Roboto } from 'next/font/google'
+import { cn } from '@/lib/utils'
+import './globals.css'
+import { Toaster } from "@/components/ui/toaster"
+import { CSPostHogProvider } from './providers'
+import type { Metadata } from 'next'
 
-const inter = Inter({ subsets: ["latin"] });
+
+const fontHeading = Roboto({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-heading',
+  weight: '700', 
+})
+
+const fontBody = Roboto({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-body',
+  weight: '400', 
+})
+
 
 export const metadata: Metadata = {
   title: "The Pie Equation",
   description: "The Pie Equation",
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
+  viewport: "width=device-width, initial-scale=1, maximum-scale=1",
   openGraph: {
     images: [
       {
@@ -28,7 +45,20 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+      <CSPostHogProvider>
+      <body 
+        className={cn(
+          'antialiased',
+          fontHeading.variable,
+          fontBody.variable
+        )}
+        > 
+        {children}
+        <Toaster />
+      </body>
+      </CSPostHogProvider>
+      </body>
     </html>
-  )
+  );
 }
