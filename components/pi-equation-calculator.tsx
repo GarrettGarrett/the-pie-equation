@@ -238,8 +238,8 @@ const PIEquationCalculator: React.FC = () => {
               <p>Hypothetical Max Revenue: ${formatNumber(hypotheticalMax)}</p>
               <div className="text-sm text-muted-foreground">
                 <p>Calculation:</p>
-                <p>Hypothetical Max = (Sales Volume * Price) / (Churn / 100)</p>
-                <p>= ({salesVolume.toLocaleString()} * ${formatNumber(price as number)}) / ({churn}% / 100)</p>
+                <p>Hypothetical Max = Sales Volume * (Price / Churn)</p>
+                <p>= {salesVolume.toLocaleString()} * (${formatNumber(price as number)} / {churn}%)</p>
                 <p>= ${formatNumber(hypotheticalMax)}</p>
               </div>
               <div className="h-80">
@@ -321,8 +321,8 @@ const PIEquationCalculator: React.FC = () => {
             <div className="text-sm text-muted-foreground mt-2">
               <p>This is the average revenue you can expect from a customer over their entire relationship with your business.</p>
               <p className="mt-2">Calculation:</p>
-              <p>Lifetime Value = Price / (Churn / 100)</p>
-              <p>= ${formatNumber(price as number)} / ({churn}% / 100)</p>
+              <p>Lifetime Value = Price / Churn</p>
+              <p>= ${formatNumber(price as number)} / {churn}%</p>
               <p>= ${formatNumber(lifetimeValue)}</p>
             </div>
           </CardContent>
