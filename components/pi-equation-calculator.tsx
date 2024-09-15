@@ -138,7 +138,7 @@ const PIEquationCalculator: React.FC = () => {
         <CardHeader>
           <CardTitle>The PIE Equation Calculator</CardTitle>
           <CardDescription>
-            Calculate Your Hypothetical Max Revenue 
+            Calculate the potential growth of your subscription business using Alex Harmozi's PIE Equation.
           </CardDescription>
         </CardHeader>
         <CardContent>
